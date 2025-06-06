@@ -376,20 +376,32 @@
                 </table>
             </div>
             
-            <!-- Action Buttons -->
-            <div class="action-buttons hidden" id="actionButtons">
-                <button class="btn btn-secondary" onclick="exportCorrectedData()">
-                    📤 Export Corrected Data
-                </button>
-                <button class="btn btn-primary" onclick="importToSupabase()" id="importBtn">
-                    🚀 Import to Supabase
-                </button>
-            </div>
-            
-            <!-- Import Log -->
-            <div class="log-container" id="logContainer">
-                <div id="importLog"></div>
-            </div>
+      {/* Action Buttons */}
+<div style={{ display: 'flex', gap: '15px', margin: '30px 0', justifyContent: 'center', flexWrap: 'wrap' }}>
+  <button onClick={exportCorrectedData} style={{ /* styles */ }}>
+    📤 Export Corrected Data
+  </button>
+  <button onClick={importToSupabase} style={{ /* styles */ }}>
+    🚀 Import to Supabase
+  </button>
+</div>
+
+{/* Import Log Container */}
+<div id="logContainer" style={{ 
+  background: '#2d3748', 
+  color: '#e2e8f0', 
+  padding: '20px', 
+  borderRadius: '10px', 
+  margin: '20px 0', 
+  fontFamily: 'Courier New, monospace', 
+  maxHeight: '400px', 
+  overflowY: 'auto', 
+  display: 'none' 
+}}>
+  <div id="importLog"></div>
+</div>
+
+{/* The rest of your component continues... */}
             
             <!-- Supabase Configuration -->
             <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; display: none;" id="supabaseConfig">
