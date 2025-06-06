@@ -675,50 +675,184 @@
             XLSX.writeFile(wb, 'corrected-temples.xlsx');
         }
         
-        function importToSupabase() {
-            document.getElementById('supabaseConfig').style.display = 'block';
-            document.getElementById('logContainer').style.display = 'block';
-            
-            // This would need to connect to your Supabase instance
-            // For now, we'll simulate the import process
-            simulateImport();
+        // Replace your existing importToSupabase function with this:
+  const importToSupabase = async () => {
+    const logContainer = document.getElementById('logContainer')
+    
+    // Show the log container
+    if (logContainer) {
+      logContainer.style.display = 'block'
+    }
+    
+    // Clear previous logs
+    const log = document.getElementById('importLog')
+    if (log) {
+      log.innerHTML = ''
+    }
+    
+    addLog('🚀 Starting Supabase import...', 'info')
+    
+    // Filter out invalid temples
+    const validTemples = templeData.filter(temple => temple.status !== 'error')
+    const invalidCount = templeData.length - validTemples.length
+    
+    if (invalidCount > 0) {
+      addLog(`⚠️ Skipping ${invalidCount} temples with errors`, 'warning')
+    }
+    
+    addLog(`📊 Importing ${validTemples.length} valid temples`, 'info')
+    
+    let successCount = 0
+    let errorCount = 0
+    const errors: string[] = []
+    
+    // Import temples one by one
+    for (let i = 0; i < validTemples.length; i++) {
+      const temple = validTemples[i]
+      
+      try {
+        addLog(`Processing: ${temple.name} (${i + 1}/${validTemples.length})`, 'info')
+        
+        // Get tradition ID
+        const traditionResponse = await fetch('/api/get-tradition-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ traditionName: temple.tradition })
+        })
+        
+        if (!traditionResponse.ok) {
+          throw new Error(`Failed to get tradition ID for ${temple.tradition}`)
         }
         
-        function simulateImport() {
-            const log = document.getElementById('importLog');
-            log.innerHTML = '';
-            
-            addLog('🚀 Starting import process...', 'success');
-            addLog(`📊 Processing ${templeData.length} temples`, 'success');
-            
-            let processed = 0;
-            const validTemples = templeData.filter(t => t.status !== 'error');
-            
-            addLog(`✅ ${validTemples.length} valid temples ready for import`, 'success');
-            addLog(`⚠️ ${templeData.length - validTemples.length} temples skipped due to errors`, 'warning');
-            
-            // Simulate processing each temple
-            validTemples.forEach((temple, index) => {
-                setTimeout(() => {
-                    addLog(`Processing: ${temple.name} (${temple.city}, ${temple.state})`, 'success');
-                    processed++;
-                    
-                    if (processed === validTemples.length) {
-                        addLog('🎉 Import completed successfully!', 'success');
-                        addLog('Visit your test page to see the imported data', 'success');
-                    }
-                }, index * 100);
-            });
+        const { traditionId } = await traditionResponse.json()
+        
+        // Get state ID
+        let stateId = null
+        if (temple.state) {
+          const stateResponse = await fetch('/api/get-state-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stateName: temple.state })
+          })
+          
+          if (stateResponse.ok) {
+            const stateData = await stateResponse.json()
+            stateId = stateData.stateId
+          }
         }
         
-        function addLog(message, type = 'info') {
-            const log = document.getElementById('importLog');
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
-            log.appendChild(entry);
-            log.scrollTop = log.scrollHeight;
+        // Prepare temple data for Supabase
+        const templeForDb = {
+          name: temple.name,
+          tradition_id: traditionId,
+          city: temple.city || null,
+          state_id: stateId,
+          phone: temple.phone || null,
+          email: temple.email || null,
+          website_url: temple.website || null,
+          address_line1: temple.address || null,
+          description: temple.description || null,
+          google_rating: temple.rating,
+          google_reviews_count: temple.reviews,
+          slug: generateSlug(temple.name),
+          status: 'active',
+          verification_status: 'unverified'
         }
+        
+        // Insert temple into Supabase
+        const insertResponse = await fetch('/api/insert-temple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(templeForDb)
+        })
+        
+        if (!insertResponse.ok) {
+          const errorData = await insertResponse.json()
+          throw new Error(errorData.error || 'Failed to insert temple')
+        }
+        
+        successCount++
+        addLog(`✅ Successfully imported: ${temple.name}`, 'success')
+        
+      } catch (error) {
+        errorCount++
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        addLog(`❌ Error importing ${temple.name}: ${errorMessage}`, 'error')
+        errors.push(`${temple.name}: ${errorMessage}`)
+      }
+      
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+    
+    // Final summary
+    addLog('', 'info')
+    addLog('='.repeat(50), 'info')
+    addLog('🎯 IMPORT SUMMARY', 'info')
+    addLog('='.repeat(50), 'info')
+    addLog(`📊 Total temples processed: ${validTemples.length}`, 'info')
+    addLog(`✅ Successfully imported: ${successCount}`, 'success')
+    addLog(`❌ Errors: ${errorCount}`, errorCount > 0 ? 'error' : 'info')
+    
+    if (validTemples.length > 0) {
+      const successRate = Math.round((successCount / validTemples.length) * 100)
+      addLog(`📈 Success rate: ${successRate}%`, 'info')
+    }
+    
+    if (errors.length > 0) {
+      addLog('', 'error')
+      addLog('❌ ERROR DETAILS:', 'error')
+      errors.slice(0, 5).forEach(error => addLog(`  • ${error}`, 'error'))
+      if (errors.length > 5) {
+        addLog(`  ... and ${errors.length - 5} more errors`, 'error')
+      }
+    }
+    
+    if (successCount > 0) {
+      addLog('', 'success')
+      addLog('🎉 Import completed!', 'success')
+      addLog('🔗 Visit your test page to see the imported temples:', 'success')
+      addLog('https://your-app.vercel.app/test-connection', 'success')
+      addLog('', 'success')
+      addLog('🏠 Your temples are now live on your website!', 'success')
+    }
+  }
+
+  // Helper function to generate URL-friendly slugs
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
+
+  // Replace your existing addLog function with this:
+  const addLog = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    const log = document.getElementById('importLog')
+    if (!log) return
+    
+    const entry = document.createElement('div')
+    entry.style.margin = '2px 0'
+    entry.style.padding = '2px 0'
+    
+    // Add colors based on type
+    const colors = {
+      info: '#e2e8f0',
+      success: '#68d391', 
+      warning: '#f6e05e',
+      error: '#fc8181'
+    }
+    entry.style.color = colors[type]
+    
+    // Add timestamp for non-empty messages
+    const timestamp = message.trim() ? `${new Date().toLocaleTimeString()} - ` : ''
+    entry.textContent = `${timestamp}${message}`
+    
+    log.appendChild(entry)
+    log.scrollTop = log.scrollHeight
+  }
     </script>
 </body>
 </html>
