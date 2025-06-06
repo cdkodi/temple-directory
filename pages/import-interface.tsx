@@ -666,6 +666,68 @@ export default function ImportInterface() {
                                   fontSize: '12px'
                                 }}
                               >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '15px', margin: '30px 0', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={exportCorrectedData}
+                    style={{ 
+                      padding: '15px 30px', 
+                      border: 'none', 
+                      borderRadius: '10px', 
+                      fontSize: '1.1rem', 
+                      cursor: 'pointer', 
+                      fontWeight: '600',
+                      background: 'linear-gradient(135deg, #6c757d 0%, #495057 100%)',
+                      color: 'white'
+                    }}
+                  >
+                    📤 Export Corrected Data
+                  </button>
+                  <button 
+                    onClick={() => alert('Import functionality will connect to Supabase here!')}
+                    style={{ 
+                      padding: '15px 30px', 
+                      border: 'none', 
+                      borderRadius: '10px', 
+                      fontSize: '1.1rem', 
+                      cursor: 'pointer', 
+                      fontWeight: '600',
+                      background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                      color: 'white'
+                    }}
+                  >
+                    🚀 Import to Supabase
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Detail Editing Modal */}
+        {editingTemple !== null && (
+          <DetailModal 
+            temple={templeData.find(t => t.id === editingTemple)!}
+            onClose={() => setEditingTemple(null)}
+          />
+        )}
+      </div>
+    </>
+  )
+}'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
                                 ✏️ Edit
                               </button>
                               <button 
