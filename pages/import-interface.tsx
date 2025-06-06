@@ -1,4 +1,4 @@
-// pages/import-interface.tsx (Enhanced Version)
+// pages/import-interface.tsx (Complete Enhanced Version)
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -666,6 +666,20 @@ export default function ImportInterface() {
                                   fontSize: '12px'
                                 }}
                               >
+                                ✏️ Edit
+                              </button>
+                              <button 
+                                onClick={() => deleteTemple(temple.id)}
+                                style={{ 
+                                  background: '#dc3545', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  padding: '5px 10px', 
+                                  borderRadius: '5px', 
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
                                 🗑️
                               </button>
                             </div>
@@ -724,18 +738,4 @@ export default function ImportInterface() {
       </div>
     </>
   )
-}'pointer',
-                                  fontSize: '12px'
-                                }}
-                              >
-                                ✏️ Edit
-                              </button>
-                              <button 
-                                onClick={() => deleteTemple(temple.id)}
-                                style={{ 
-                                  background: '#dc3545', 
-                                  color: 'white', 
-                                  border: 'none', 
-                                  padding: '5px 10px', 
-                                  borderRadius: '5px', 
-                                  cursor:
+}
