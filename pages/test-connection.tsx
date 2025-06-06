@@ -4,11 +4,25 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+interface Tradition {
+  id: string
+  name: string
+  description?: string
+  color_code: string
+}
+
+interface Temple {
+  id: string
+  name: string
+  city: string
+  status: string
+}
+
 export default function TestConnectionPage() {
   const [connectionStatus, setConnectionStatus] = useState('Testing...')
-  const [traditions, setTraditions] = useState([])
-  const [temples, setTemples] = useState([])
-  const [error, setError] = useState(null)
+  const [traditions, setTraditions] = useState<Tradition[]>([])
+  const [temples, setTemples] = useState<Temple[]>([])
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     testConnection()
@@ -45,7 +59,7 @@ export default function TestConnectionPage() {
 
       setConnectionStatus('✅ Connected successfully!')
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Connection test failed:', err)
       setError(err.message)
       setConnectionStatus('❌ Connection failed')
@@ -119,7 +133,7 @@ export default function TestConnectionPage() {
               </div>
             ) : (
               <div className="p-4 bg-gray-50 rounded-lg text-gray-600">
-                No traditions found. Make sure you've run the SQL schema.
+                No traditions found. Make sure you&apos;ve run the SQL schema.
               </div>
             )}
           </div>
@@ -139,7 +153,7 @@ export default function TestConnectionPage() {
               </div>
             ) : (
               <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
-                No temples found yet. This is normal if you haven't imported your temple data.
+                No temples found yet. This is normal if you haven&apos;t imported your temple data.
                 <br />
                 <strong>Next step:</strong> Import your Excel data using the import script.
               </div>
