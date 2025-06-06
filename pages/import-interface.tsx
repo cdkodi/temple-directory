@@ -1,4 +1,4 @@
-// pages/import-interface.tsx
+// pages/import-interface.tsx (Enhanced Version)
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -27,6 +27,7 @@ export default function ImportInterface() {
   const [isUploading, setIsUploading] = useState(false)
   const [showData, setShowData] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [editingTemple, setEditingTemple] = useState<number | null>(null)
   
   // Filters
   const [nameFilter, setNameFilter] = useState('')
@@ -190,6 +191,31 @@ export default function ImportInterface() {
     }
   }
 
+  const addNewTemple = () => {
+    const newId = Math.max(...templeData.map(t => t.id)) + 1
+    const newTemple: TempleData = {
+      id: newId,
+      originalRow: {},
+      name: 'New Temple',
+      tradition: 'Hindu',
+      city: '',
+      state: '',
+      phone: '',
+      website: '',
+      rating: null,
+      reviews: null,
+      email: '',
+      address: '',
+      description: '',
+      status: 'warning'
+    }
+    
+    const updatedData = [...templeData, newTemple]
+    setTempleData(updatedData)
+    updateStats(updatedData)
+    setEditingTemple(newId)
+  }
+
   const exportCorrectedData = async () => {
     const XLSX = await import('xlsx')
     
@@ -213,6 +239,233 @@ export default function ImportInterface() {
     XLSX.utils.book_append_sheet(wb, ws, 'Corrected Temples')
     XLSX.writeFile(wb, 'corrected-temples.xlsx')
   }
+
+  const EditableCell = ({ temple, field, value, type = 'text' }: { 
+    temple: TempleData, 
+    field: keyof TempleData, 
+    value: string, 
+    type?: string 
+  }) => {
+    const [isEditing, setIsEditing] = useState(false)
+    const [tempValue, setTempValue] = useState(value)
+
+    const handleSave = () => {
+      updateTemple(temple.id, field, tempValue)
+      setIsEditing(false)
+    }
+
+    const handleKeyPress = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSave()
+      } else if (e.key === 'Escape') {
+        setTempValue(value)
+        setIsEditing(false)
+      }
+    }
+
+    if (isEditing) {
+      return (
+        <input
+          type={type}
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyPress}
+          autoFocus
+          style={{
+            width: '100%',
+            padding: '8px',
+            border: '2px solid #ff6b35',
+            borderRadius: '4px',
+            fontSize: '14px'
+          }}
+        />
+      )
+    }
+
+    return (
+      <div
+        onClick={() => setIsEditing(true)}
+        style={{
+          padding: '8px',
+          minHeight: '20px',
+          cursor: 'pointer',
+          borderRadius: '4px',
+          border: '1px solid transparent',
+          backgroundColor: 'transparent'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#f8f9fa'
+          e.currentTarget.style.border = '1px solid #dee2e6'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'transparent'
+          e.currentTarget.style.border = '1px solid transparent'
+        }}
+      >
+        {value || <span style={{ color: '#999', fontStyle: 'italic' }}>Click to add...</span>}
+      </div>
+    )
+  }
+
+  const DetailModal = ({ temple, onClose }: { temple: TempleData, onClose: () => void }) => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      zIndex: 1000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '15px',
+        padding: '30px',
+        maxWidth: '600px',
+        width: '90%',
+        maxHeight: '80vh',
+        overflow: 'auto'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, color: '#ff6b35' }}>Edit Temple Details</h2>
+          <button onClick={onClose} style={{ 
+            background: 'none', 
+            border: 'none', 
+            fontSize: '24px', 
+            cursor: 'pointer',
+            color: '#999'
+          }}>×</button>
+        </div>
+        
+        <div style={{ display: 'grid', gap: '15px' }}>
+          <div>
+            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Temple Name *</label>
+            <input
+              type="text"
+              value={temple.name}
+              onChange={(e) => updateTemple(temple.id, 'name', e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            />
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Tradition</label>
+              <select
+                value={temple.tradition}
+                onChange={(e) => updateTemple(temple.id, 'tradition', e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+              >
+                <option value="Hindu">Hindu</option>
+                <option value="Sikh">Sikh</option>
+                <option value="Jain">Jain</option>
+                <option value="Buddhist">Buddhist</option>
+              </select>
+            </div>
+            
+            <div>
+              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>State</label>
+              <input
+                type="text"
+                value={temple.state}
+                onChange={(e) => updateTemple(temple.id, 'state', e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                placeholder="e.g., CA, NY, TX"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>City</label>
+            <input
+              type="text"
+              value={temple.city}
+              onChange={(e) => updateTemple(temple.id, 'city', e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+            />
+          </div>
+          
+          <div>
+            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Full Address</label>
+            <input
+              type="text"
+              value={temple.address}
+              onChange={(e) => updateTemple(temple.id, 'address', e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+              placeholder="Street address"
+            />
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div>
+              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Phone</label>
+              <input
+                type="tel"
+                value={temple.phone}
+                onChange={(e) => updateTemple(temple.id, 'phone', e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                placeholder="(555) 123-4567"
+              />
+            </div>
+            
+            <div>
+              <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Email</label>
+              <input
+                type="email"
+                value={temple.email}
+                onChange={(e) => updateTemple(temple.id, 'email', e.target.value)}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+                placeholder="info@temple.org"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Website</label>
+            <input
+              type="url"
+              value={temple.website}
+              onChange={(e) => updateTemple(temple.id, 'website', e.target.value)}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px' }}
+              placeholder="https://www.temple.org"
+            />
+          </div>
+          
+          <div>
+            <label style={{ fontWeight: 'bold', marginBottom: '5px', display: 'block' }}>Description</label>
+            <textarea
+              value={temple.description}
+              onChange={(e) => updateTemple(temple.id, 'description', e.target.value)}
+              rows={4}
+              style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '5px', resize: 'vertical' }}
+              placeholder="Brief description of the temple..."
+            />
+          </div>
+        </div>
+        
+        <div style={{ marginTop: '20px', textAlign: 'right' }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#ff6b35',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -264,7 +517,7 @@ export default function ImportInterface() {
               </div>
             )}
             
-            {/* Statistics */}
+            {/* Statistics and Controls */}
             {showData && (
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', margin: '30px 0' }}>
@@ -272,18 +525,37 @@ export default function ImportInterface() {
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '5px' }}>{stats.total}</div>
                     <div>Total Temples</div>
                   </div>
-                  <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '5px' }}>{stats.valid}</div>
                     <div>Valid Records</div>
                   </div>
-                  <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '5px' }}>{stats.warning}</div>
                     <div>Needs Review</div>
                   </div>
-                  <div style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
+                  <div style={{ background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)', color: 'white', padding: '20px', borderRadius: '15px', textAlign: 'center' }}>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '5px' }}>{stats.error}</div>
                     <div>Has Errors</div>
                   </div>
+                </div>
+                
+                {/* Add New Temple Button */}
+                <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                  <button
+                    onClick={addNewTemple}
+                    style={{
+                      padding: '12px 24px',
+                      backgroundColor: '#28a745',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    ➕ Add New Temple
+                  </button>
                 </div>
                 
                 {/* Filters */}
@@ -336,7 +608,6 @@ export default function ImportInterface() {
                         <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>City</th>
                         <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>State</th>
                         <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>Phone</th>
-                        <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>Website</th>
                         <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>Rating</th>
                         <th style={{ padding: '15px 10px', textAlign: 'left', fontWeight: '600' }}>Actions</th>
                       </tr>
@@ -356,19 +627,14 @@ export default function ImportInterface() {
                               {temple.status.toUpperCase()}
                             </span>
                           </td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <input 
-                              type="text" 
-                              value={temple.name} 
-                              onChange={(e) => updateTemple(temple.id, 'name', e.target.value)}
-                              style={{ background: 'transparent', border: '1px solid transparent', padding: '5px', borderRadius: '5px', width: '100%', minWidth: '120px' }}
-                            />
+                          <td style={{ padding: '12px 10px', minWidth: '150px' }}>
+                            <EditableCell temple={temple} field="name" value={temple.name} />
                           </td>
                           <td style={{ padding: '12px 10px' }}>
                             <select 
                               value={temple.tradition}
                               onChange={(e) => updateTemple(temple.id, 'tradition', e.target.value)}
-                              style={{ padding: '5px', border: '1px solid #dee2e6', borderRadius: '5px', background: 'white' }}
+                              style={{ padding: '5px', border: '1px solid #dee2e6', borderRadius: '5px', background: 'white', width: '100%' }}
                             >
                               <option value="Hindu">Hindu</option>
                               <option value="Sikh">Sikh</option>
@@ -376,91 +642,38 @@ export default function ImportInterface() {
                               <option value="Buddhist">Buddhist</option>
                             </select>
                           </td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <input 
-                              type="text" 
-                              value={temple.city} 
-                              onChange={(e) => updateTemple(temple.id, 'city', e.target.value)}
-                              style={{ background: 'transparent', border: '1px solid transparent', padding: '5px', borderRadius: '5px', width: '100%', minWidth: '120px' }}
-                            />
+                          <td style={{ padding: '12px 10px', minWidth: '120px' }}>
+                            <EditableCell temple={temple} field="city" value={temple.city} />
                           </td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <input 
-                              type="text" 
-                              value={temple.state} 
-                              onChange={(e) => updateTemple(temple.id, 'state', e.target.value)}
-                              style={{ background: 'transparent', border: '1px solid transparent', padding: '5px', borderRadius: '5px', width: '100%', minWidth: '80px' }}
-                            />
+                          <td style={{ padding: '12px 10px', minWidth: '80px' }}>
+                            <EditableCell temple={temple} field="state" value={temple.state} />
                           </td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <input 
-                              type="text" 
-                              value={temple.phone} 
-                              onChange={(e) => updateTemple(temple.id, 'phone', e.target.value)}
-                              style={{ background: 'transparent', border: '1px solid transparent', padding: '5px', borderRadius: '5px', width: '100%', minWidth: '120px' }}
-                            />
-                          </td>
-                          <td style={{ padding: '12px 10px' }}>
-                            <input 
-                              type="text" 
-                              value={temple.website} 
-                              onChange={(e) => updateTemple(temple.id, 'website', e.target.value)}
-                              style={{ background: 'transparent', border: '1px solid transparent', padding: '5px', borderRadius: '5px', width: '100%', minWidth: '150px' }}
-                            />
+                          <td style={{ padding: '12px 10px', minWidth: '120px' }}>
+                            <EditableCell temple={temple} field="phone" value={temple.phone} type="tel" />
                           </td>
                           <td style={{ padding: '12px 10px' }}>{temple.rating || '-'}</td>
                           <td style={{ padding: '12px 10px' }}>
-                            <button 
-                              onClick={() => deleteTemple(temple.id)}
-                              style={{ background: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer' }}
-                            >
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '15px', margin: '30px 0', justifyContent: 'center' }}>
-                  <button 
-                    onClick={exportCorrectedData}
-                    style={{ 
-                      padding: '15px 30px', 
-                      border: 'none', 
-                      borderRadius: '10px', 
-                      fontSize: '1.1rem', 
-                      cursor: 'pointer', 
-                      fontWeight: '600',
-                      background: 'linear-gradient(135deg, #6c757d 0%, #495057 100%)',
-                      color: 'white'
-                    }}
-                  >
-                    📤 Export Corrected Data
-                  </button>
-                  <button 
-                    onClick={() => alert('Import functionality would connect to Supabase here!')}
-                    style={{ 
-                      padding: '15px 30px', 
-                      border: 'none', 
-                      borderRadius: '10px', 
-                      fontSize: '1.1rem', 
-                      cursor: 'pointer', 
-                      fontWeight: '600',
-                      background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                      color: 'white'
-                    }}
-                  >
-                    🚀 Import to Supabase
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
+                            <div style={{ display: 'flex', gap: '5px' }}>
+                              <button 
+                                onClick={() => setEditingTemple(temple.id)}
+                                style={{ 
+                                  background: '#007bff', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  padding: '5px 10px', 
+                                  borderRadius: '5px', 
+                                  cursor: 'pointer',
+                                  fontSize: '12px'
+                                }}
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button 
+                                onClick={() => deleteTemple(temple.id)}
+                                style={{ 
+                                  background: '#dc3545', 
+                                  color: 'white', 
+                                  border: 'none', 
+                                  padding: '5px 10px', 
+                                  borderRadius: '5px', 
+                                  cursor:
