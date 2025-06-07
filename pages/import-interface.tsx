@@ -1,4 +1,5 @@
-// pages/import-interface.tsx (Complete Enhanced Version)
+// pages/import-interface.tsx
+// Complete file with all latest changes
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -238,6 +239,206 @@ export default function ImportInterface() {
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Corrected Temples')
     XLSX.writeFile(wb, 'corrected-temples.xlsx')
+  }
+
+  // SUPABASE IMPORT FUNCTION
+  const importToSupabase = async () => {
+    console.log('Import button clicked!') // Debug log
+    
+    const logContainer = document.getElementById('logContainer')
+    const log = document.getElementById('importLog')
+    
+    // Show the log container
+    if (logContainer) {
+      logContainer.style.display = 'block'
+      console.log('Log container shown')
+    } else {
+      console.error('Log container not found!')
+      alert('Log container not found. Please check if the HTML is properly set up.')
+      return
+    }
+    
+    // Clear previous logs
+    if (log) {
+      log.innerHTML = ''
+    }
+    
+    addLog('🚀 Starting Supabase import...', 'info')
+    addLog(`📊 Found ${templeData.length} temples to process`, 'info')
+    
+    // Filter out invalid temples
+    const validTemples = templeData.filter(temple => temple.status !== 'error')
+    const invalidCount = templeData.length - validTemples.length
+    
+    if (invalidCount > 0) {
+      addLog(`⚠️ Skipping ${invalidCount} temples with errors`, 'warning')
+    }
+    
+    addLog(`✅ Processing ${validTemples.length} valid temples`, 'info')
+    
+    let successCount = 0
+    let errorCount = 0
+    const errors: string[] = []
+    
+    // Import temples one by one
+    for (let i = 0; i < validTemples.length; i++) {
+      const temple = validTemples[i]
+      
+      try {
+        addLog(`Processing: ${temple.name} (${i + 1}/${validTemples.length})`, 'info')
+        
+        // Get tradition ID
+        addLog(`  Looking up tradition: ${temple.tradition}`, 'info')
+        const traditionResponse = await fetch('/api/get-tradition-id', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ traditionName: temple.tradition })
+        })
+        
+        if (!traditionResponse.ok) {
+          throw new Error(`Failed to get tradition ID for ${temple.tradition}`)
+        }
+        
+        const { traditionId } = await traditionResponse.json()
+        addLog(`  ✅ Found tradition ID: ${traditionId}`, 'success')
+        
+        // Get state ID
+        let stateId = null
+        if (temple.state) {
+          addLog(`  Looking up state: ${temple.state}`, 'info')
+          const stateResponse = await fetch('/api/get-state-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stateName: temple.state })
+          })
+          
+          if (stateResponse.ok) {
+            const stateData = await stateResponse.json()
+            stateId = stateData.stateId
+            addLog(`  ✅ Found state ID: ${stateId}`, 'success')
+          } else {
+            addLog(`  ⚠️ Could not find state: ${temple.state}`, 'warning')
+          }
+        }
+        
+        // Prepare temple data for Supabase
+        const templeForDb = {
+          name: temple.name,
+          tradition_id: traditionId,
+          city: temple.city || null,
+          state_id: stateId,
+          phone: temple.phone || null,
+          email: temple.email || null,
+          website_url: temple.website || null,
+          address_line1: temple.address || null,
+          description: temple.description || null,
+          google_rating: temple.rating,
+          google_reviews_count: temple.reviews,
+          slug: generateSlug(temple.name),
+          status: 'active',
+          verification_status: 'unverified'
+        }
+        
+        addLog(`  Inserting temple into database...`, 'info')
+        
+        // Insert temple into Supabase
+        const insertResponse = await fetch('/api/insert-temple', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(templeForDb)
+        })
+        
+        if (!insertResponse.ok) {
+          const errorData = await insertResponse.json()
+          throw new Error(errorData.error || 'Failed to insert temple')
+        }
+        
+        successCount++
+        addLog(`✅ Successfully imported: ${temple.name}`, 'success')
+        
+      } catch (error) {
+        errorCount++
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        addLog(`❌ Error importing ${temple.name}: ${errorMessage}`, 'error')
+        errors.push(`${temple.name}: ${errorMessage}`)
+      }
+      
+      // Small delay to avoid overwhelming the API
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    
+    // Final summary
+    addLog('', 'info')
+    addLog('='.repeat(50), 'info')
+    addLog('🎯 IMPORT SUMMARY', 'info')
+    addLog('='.repeat(50), 'info')
+    addLog(`📊 Total temples processed: ${validTemples.length}`, 'info')
+    addLog(`✅ Successfully imported: ${successCount}`, 'success')
+    addLog(`❌ Errors: ${errorCount}`, errorCount > 0 ? 'error' : 'info')
+    
+    if (validTemples.length > 0) {
+      const successRate = Math.round((successCount / validTemples.length) * 100)
+      addLog(`📈 Success rate: ${successRate}%`, 'info')
+    }
+    
+    if (errors.length > 0) {
+      addLog('', 'error')
+      addLog('❌ ERROR DETAILS:', 'error')
+      errors.slice(0, 5).forEach(error => addLog(`  • ${error}`, 'error'))
+      if (errors.length > 5) {
+        addLog(`  ... and ${errors.length - 5} more errors`, 'error')
+      }
+    }
+    
+    if (successCount > 0) {
+      addLog('', 'success')
+      addLog('🎉 Import completed!', 'success')
+      addLog('🔗 Visit your test page to see the imported temples:', 'success')
+      addLog('https://your-app.vercel.app/test-connection', 'success')
+      addLog('', 'success')
+      addLog('🏠 Your temples are now live on your website!', 'success')
+    }
+  }
+
+  // Helper function to generate URL-friendly slugs
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+  }
+
+  // Helper function to add log entries
+  const addLog = (message: string, type: 'info' | 'success' | 'warning' | 'error' = 'info') => {
+    console.log(`[${type}] ${message}`) // Debug log
+    
+    const log = document.getElementById('importLog')
+    if (!log) {
+      console.error('Import log element not found!')
+      return
+    }
+    
+    const entry = document.createElement('div')
+    entry.style.margin = '2px 0'
+    entry.style.padding = '2px 0'
+    
+    // Add colors based on type
+    const colors = {
+      info: '#e2e8f0',
+      success: '#68d391', 
+      warning: '#f6e05e',
+      error: '#fc8181'
+    }
+    entry.style.color = colors[type]
+    
+    // Add timestamp for non-empty messages
+    const timestamp = message.trim() ? `${new Date().toLocaleTimeString()} - ` : ''
+    entry.textContent = `${timestamp}${message}`
+    
+    log.appendChild(entry)
+    log.scrollTop = log.scrollHeight
   }
 
   const EditableCell = ({ temple, field, value, type = 'text' }: { 
@@ -708,7 +909,7 @@ export default function ImportInterface() {
                     📤 Export Corrected Data
                   </button>
                   <button 
-                    onClick={() => alert('Import functionality will connect to Supabase here!')}
+                    onClick={importToSupabase}
                     style={{ 
                       padding: '15px 30px', 
                       border: 'none', 
@@ -722,6 +923,21 @@ export default function ImportInterface() {
                   >
                     🚀 Import to Supabase
                   </button>
+                </div>
+
+                {/* Import Log Container */}
+                <div id="logContainer" style={{ 
+                  background: '#2d3748', 
+                  color: '#e2e8f0', 
+                  padding: '20px', 
+                  borderRadius: '10px', 
+                  margin: '20px 0', 
+                  fontFamily: 'Courier New, monospace', 
+                  maxHeight: '400px', 
+                  overflowY: 'auto', 
+                  display: 'none' 
+                }}>
+                  <div id="importLog"></div>
                 </div>
               </>
             )}
