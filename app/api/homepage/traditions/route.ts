@@ -1,6 +1,6 @@
 // =====================================================
 // app/api/homepage/traditions/route.ts
-// Get traditions with temple counts
+// Fixed version with proper error handling
 // =====================================================
 
 import { createClient } from '@supabase/supabase-js'
@@ -13,13 +13,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 export async function GET() {
   try {
     // Get all traditions
-    const { data, error } = await supabase
+    const { data: traditionsData, error } = await supabase
       .from('traditions')
-      .select(`
-        id,
-        name,
-        color_code
-      `)
+      .select('id, name, color_code')
       .order('name')
 
     if (error) {
@@ -27,20 +23,34 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch traditions' }, { status: 500 })
     }
 
+    if (!traditionsData) {
+      return NextResponse.json({ traditions: [] })
+    }
+
     // Count active temples for each tradition
     const traditionCounts = await Promise.all(
-      data.map(async (tradition) => {
-        const { count } = await supabase
-          .from('temples')
-          .select('*', { count: 'exact', head: true })
-          .eq('tradition_id', tradition.id)
-          .eq('status', 'active')
+      traditionsData.map(async (tradition: any) => {
+        try {
+          const { count } = await supabase
+            .from('temples')
+            .select('*', { count: 'exact', head: true })
+            .eq('tradition_id', tradition.id)
+            .eq('status', 'active')
 
-        return {
-          id: tradition.id,
-          name: tradition.name,
-          color_code: tradition.color_code,
-          temple_count: count || 0
+          return {
+            id: tradition.id,
+            name: tradition.name,
+            color_code: tradition.color_code,
+            temple_count: count || 0
+          }
+        } catch (countError) {
+          console.error(`Error counting temples for ${tradition.name}:`, countError)
+          return {
+            id: tradition.id,
+            name: tradition.name,
+            color_code: tradition.color_code,
+            temple_count: 0
+          }
         }
       })
     )
