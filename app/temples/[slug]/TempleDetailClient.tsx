@@ -40,8 +40,6 @@ interface Temple {
   status?: string
   is_featured?: boolean
   traditions?: { name: string }
-  states?: { name: string; abbreviation: string }
-  categories?: { name: string }
 }
 
 export default function TempleDetailClient({ temple }: { temple: Temple }) {
@@ -152,11 +150,6 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
                 {temple.traditions?.name && (
                   <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                     {temple.traditions.name}
-                  </span>
-                )}
-                {temple.categories?.name && (
-                  <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {temple.categories.name}
                   </span>
                 )}
                 {temple.is_featured && (
@@ -308,7 +301,6 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
                     <h4 className="font-semibold mb-2">Temple Information</h4>
                     <ul className="space-y-1 text-gray-600">
                       {temple.traditions?.name && <li>Tradition: {temple.traditions.name}</li>}
-                      {temple.categories?.name && <li>Category: {temple.categories.name}</li>}
                       {temple.established_year && <li>Established: {temple.established_year}</li>}
                       {temple.architectural_style && <li>Style: {temple.architectural_style}</li>}
                       <li>Location: {temple.city}, {temple.states?.name}</li>
