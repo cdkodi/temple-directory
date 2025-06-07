@@ -1,2 +1,2 @@
 # temple-directory
-Hindu, Sikh &amp; Jain Temple Directory for USA
+Hindu, Sikh ,Jain Temple Directory for USA
