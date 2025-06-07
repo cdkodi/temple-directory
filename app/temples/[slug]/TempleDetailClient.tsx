@@ -14,6 +14,7 @@ interface Temple {
   address_line1?: string
   address_line2?: string
   city?: string
+  state_id?: string
   postal_code?: string
   country?: string
   phone?: string
@@ -57,7 +58,7 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
       try {
         await navigator.share({
           title: temple.name,
-          text: `Check out ${temple.name} in ${temple.city}, ${temple.states?.name}`,
+          text: `Check out ${temple.name} in ${temple.city}`,
           url: window.location.href,
         })
       } catch (err) {
@@ -74,7 +75,7 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
       temple.address_line1,
       temple.address_line2,
       temple.city,
-      temple.states?.name,
+      temple.state_id,
       temple.postal_code
     ].filter(Boolean).join(' ')
     
@@ -171,7 +172,7 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
               
               <div className="flex items-center text-white/90 mb-4">
                 <MapPin size={16} className="mr-2" />
-                <span>{temple.city}, {temple.states?.name}</span>
+                <span>{temple.city}, {temple.state_id}</span>
               </div>
               
               <div className="flex space-x-3">
@@ -208,7 +209,7 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
             </div>
             {temple.address_line1 && <p className="text-gray-600">{temple.address_line1}</p>}
             {temple.address_line2 && <p className="text-gray-600">{temple.address_line2}</p>}
-            <p className="text-gray-600">{temple.city}, {temple.states?.abbreviation} {temple.postal_code}</p>
+            <p className="text-gray-600">{temple.city}, {temple.state_id} {temple.postal_code}</p>
           </div>
           
           {temple.phone && (
@@ -303,7 +304,7 @@ export default function TempleDetailClient({ temple }: { temple: Temple }) {
                       {temple.traditions?.name && <li>Tradition: {temple.traditions.name}</li>}
                       {temple.established_year && <li>Established: {temple.established_year}</li>}
                       {temple.architectural_style && <li>Style: {temple.architectural_style}</li>}
-                      <li>Location: {temple.city}, {temple.states?.name}</li>
+                      <li>Location: {temple.city}, {temple.state_id}</li>
                     </ul>
                   </div>
 
