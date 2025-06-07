@@ -1,5 +1,5 @@
 // app/api/homepage/featured-temples/route.ts
-// Get featured temples for homepage
+// Fixed version with proper TypeScript types
 
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
@@ -32,7 +32,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch featured temples' }, { status: 500 })
     }
 
-    const temples = data.map(temple => ({
+    const temples = data?.map((temple: any) => ({
       id: temple.id,
       name: temple.name,
       city: temple.city,
@@ -42,7 +42,7 @@ export async function GET() {
       google_reviews_count: temple.google_reviews_count,
       primary_image_url: temple.primary_image_url,
       slug: temple.slug
-    }))
+    })) || []
 
     return NextResponse.json({ temples })
   } catch (error) {
