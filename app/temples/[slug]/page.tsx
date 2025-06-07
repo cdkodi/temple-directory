@@ -102,9 +102,7 @@ export default async function TempleDetailPage({
     .from('temples')
     .select(`
       *,
-      traditions(name),
-      states(name, abbreviation),
-      categories(name)
+      traditions(name)
     `)
     .eq('slug', params.slug)
     .single()
